@@ -1,12 +1,14 @@
 name: web-omniroute
-version: 1.0.0
-description: "OmniRoute web search + extract — routes web_search to OmniRoute /api/v1/search and web_extract to /api/v1/web/fetch. OmniRoute handles provider credentials and rotation."
-author: skynight137
+version: 2.0.0
+description: "OmniRoute web search + extract — routes web_search to OmniRoute /api/v1/search and web_extract to OmniRoute /api/v1/web/fetch."
+author: cudatuda
 license: MIT
 kind: backend
-homepage: https://github.com/skynight137/hermes-omniroute-web
+homepage: https://github.com/cudatuda/hermes-omniroute-web
 provides_web_providers:
   - omniroute
+python_dependencies:
+  - "httpx>=0.27,<1"
 requires_env:
   - name: OMNIROUTE_API_URL
     description: "OmniRoute base URL including /v1, e.g. https://your-omniroute:20128/v1"

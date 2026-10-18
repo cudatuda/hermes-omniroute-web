@@ -1,26 +1,36 @@
 # hermes-omniroute-web
 
-Hermes web search + extract backend that routes through an [OmniRoute](https://github.com/diegosouzapw/OmniRoute) gateway.
+REST web-search and page-extraction backend for [Hermes Agent](https://github.com/NousResearch/hermes-agent), routed through [OmniRoute](https://github.com/diegosouzapw/OmniRoute).
 
-- `web_search` → OmniRoute `POST /api/v1/search`
-- `web_extract` → OmniRoute `POST /api/v1/web/fetch`
+It keeps Hermes' built-in `web_search` and `web_extract` tools and only replaces their backend:
 
-OmniRoute holds the upstream provider keys and rotates them. This plugin only needs the gateway URL and key.
+- `web_search` → `POST /api/v1/search`
+- `web_extract` → `POST /api/v1/web/fetch`
+
+No Hermes private helper modules are imported here: only the public `agent.web_search_provider.WebSearchProvider` class is used.
 
 ## Install
 
 ```bash
-hermes plugins install skynight137/hermes-omniroute-web
+hermes plugins install cudatuda/hermes-omniroute-web
 ```
 
-Set the two variables (in the profile `.env`, or your shell):
+Or install from a local checkout:
 
 ```bash
+hermes plugins install .
+```
+
+- `OMNIROUTE_API_URL` and `OMNIROUTE_API_KEY` are resolved through Hermes' public provider environment helper, so profile `.env` values and scoped gateway credentials work without importing private plugin helpers.
+
+```text
 OMNIROUTE_API_URL=https://your-omniroute-host/v1
 OMNIROUTE_API_KEY=your-omniroute-key
 ```
 
-Then select the provider in `config.yaml`:
+The plugin also accepts a URL ending in `/api/v1`; it normalizes either form to the current OmniRoute web endpoints.
+
+Select the provider in `config.yaml`:
 
 ```yaml
 web:
@@ -28,16 +38,25 @@ web:
   extract_backend: omniroute
 ```
 
-## Fallback
+If the optional pins are omitted, OmniRoute selects the configured provider and applies its own fallback policy. To pin upstream providers:
 
-If OmniRoute is unreachable or unconfigured, the plugin returns `success: false` with the reason, so Hermes can fall through to its built-in providers.
+```text
+OMNIROUTE_SEARCH_PROVIDER=serper-search
+OMNIROUTE_FETCH_PROVIDER=firecrawl
+```
+
+## Response and failure behavior
+
+The adapter maps OmniRoute search results to Hermes' `{title, url, description, position}` contract and maps fetched content to Hermes' `{url, title, content, raw_content, metadata}` contract. Fetches are performed per URL, so a failure for one URL does not discard the other results.
+
+Missing configuration, connection failures, non-JSON responses, HTTP errors, and empty fetches are returned as normal Hermes tool errors. Availability checks are offline and never probe the gateway.
 
 ## Verify
 
 ```bash
 hermes plugins validate .
+python -m unittest discover -s tests -v
+python -m py_compile provider.py __init__.py
 ```
 
-## Tested
-
-Against a live OmniRoute gateway: search returned ranked results; fetch returned page content; a stopped gateway returned a clean `success: false`.
+The source repository is a fork of the original implementation at [skynight137/hermes-omniroute-web](https://github.com/skynight137/hermes-omniroute-web).
